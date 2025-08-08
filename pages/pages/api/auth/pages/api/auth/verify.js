@@ -2,8 +2,6 @@ import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
-
-// Import the same OTP storage from register.js
 const otpStorage = new Map();
 
 export default async function handler(req, res) {
@@ -18,19 +16,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Get registration data
     const registrationData = otpStorage.get(sessionId);
     
     if (!registrationData) {
       return res.status(400).json({ error: 'Invalid session or expired' });
     }
 
-    // Verify OTPs
     if (registrationData.emailOtp !== emailOtp || registrationData.phoneOtp !== phoneOtp) {
       return res.status(400).json({ error: 'Invalid OTP codes' });
     }
 
-    // Create user in database
     const user = await prisma.user.create({
       data: {
         name: registrationData.name,
@@ -43,7 +38,6 @@ export default async function handler(req, res) {
       }
     });
 
-    // Create wallet for the user
     await prisma.wallet.create({
       data: {
         userId: user.id,
@@ -51,10 +45,8 @@ export default async function handler(req, res) {
       }
     });
 
-    // Clean up OTP storage
     otpStorage.delete(sessionId);
 
-    // Generate JWT token
     const token = jwt.sign(
       { 
         userId: user.id, 
@@ -83,4 +75,3 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
-File 10: pages/api/auth/logi
